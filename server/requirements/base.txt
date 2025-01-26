@@ -1,0 +1,5 @@
+fastapi
+pydantic
+pydantic_settings
+pydantic[email]
+uvicorn

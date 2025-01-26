@@ -17,18 +17,20 @@
         "reportMissingImports": "none"
     },
     "python.analysis.extraPaths": [
-        "${workspaceFolder}/server/app"
+        "${workspaceFolder}/server/src"
     ],
-    "python.envFile": "${workspaceFolder}/server/app/.env",
+    "python.envFile": "${workspaceFolder}/server/.env",
     "python.terminal.activateEnvironment": true,
-    "python.defaultInterpreterPath": "${workspaceFolder}/server/app/.venv/bin/python",
+    "python.defaultInterpreterPath": "${workspaceFolder}/server/.venv/bin/python",
     // Test settings
     "python.testing.pytestEnabled": true,
     "python.testing.unittestEnabled": false,
-    "python.testing.cwd": "${workspaceFolder}/server/app/tests",
-    "python.testing.pytestPath": "${workspaceFolder}/server/app/.venv/bin/pytest",
+    "python.testing.cwd": "${workspaceFolder}/server/tests",
+    "python.testing.pytestPath": "${workspaceFolder}/server/src/.venv/bin/pytest",
     "python.testing.autoTestDiscoverOnSaveEnabled": true,
+    // Formatting settings
     "editor.rulers": [
         80
-    ]
+    ],
+    "python.analysis.autoImportCompletions": true,
 }
