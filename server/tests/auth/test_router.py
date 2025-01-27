@@ -1,45 +1,34 @@
-import pytest
 from fastapi.testclient import TestClient
-from fastapi import status
-from src.auth.router import router
-from src.auth import services
+from src.auth.router import app
 
-client = TestClient(router)
+client = TestClient(app)
 
 
-def test_login_for_access_token_success(monkeypatch):
-    def mock_authenticate_user(username, password):
-        return {"username": username}
-
-    def mock_create_access_token(data):
-        return "mock_access_token"
-
-    monkeypatch.setattr(services, "authenticate_user", mock_authenticate_user)
-    monkeypatch.setattr(services, "create_access_token", mock_create_access_token)
-
+def test_login_success():
     response = client.post(
-        "/token", data={"username": "testuser", "password": "testpassword"}
+        "/token", json={"username": "testuser", "password": "testpassword"}
     )
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {
-        "access_token": "mock_access_token",
-        "token_type": "bearer",
-    }
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    assert response.json()["token_type"] == "bearer"
 
 
-def test_login_for_access_token_failure(monkeypatch):
-    def mock_authenticate_user(username, password):
-        return None
-
-    monkeypatch.setattr(services, "authenticate_user", mock_authenticate_user)
-
+def test_login_failure():
     response = client.post(
-        "/token", data={"username": "wronguser", "password": "wrongpassword"}
+        "/token", json={"username": "wronguser", "password": "wrongpassword"}
     )
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid credentials"}
 
-    print(response.status_code)
-    print(response.json())
 
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert response.json() == "Incorrect username or password"
+def test_read_secure_data():
+    # First, login to get the token
+    login_response = client.post(
+        "/token", json={"username": "testuser", "password": "testpassword"}
+    )
+    token = login_response.json()["access_token"]
+
+    # Use the token to access the secure endpoint
+    response = client.get("/secure-data", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    assert response.json() == {"message": "This is secured data."}

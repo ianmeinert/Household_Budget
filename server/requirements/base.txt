@@ -6,5 +6,4 @@ uvicorn
 passlib[bcrypt]
 python-jose
 cryptography
-pycryptodome
-python-multipart
+kyber-py
