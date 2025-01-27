@@ -1,5 +1,5 @@
 import unittest
-import os
+import pytest
 from src.database.connection import DatabaseConnection
 from src.database.repositories import (
     UserRepository,
@@ -7,12 +7,17 @@ from src.database.repositories import (
     IncomeRepository,
 )
 from src.database.exceptions import RecordNotFoundError
+from src.utils.db_utils import validate_db_file
 
 
 class TestUserRepository(unittest.TestCase):
 
+    @pytest.fixture(autouse=True)
+    def assign_test_db(self, tmpdir_factory):
+        self.test_db = tmpdir_factory.mktemp("data").join("test_db.sqlite")
+        validate_db_file(str(self.test_db))
+
     def setUp(self):
-        self.test_db = "test_database.db"
         self.user_repo = UserRepository(self.test_db)
         with DatabaseConnection(self.test_db) as cursor:
             cursor.execute("DROP TABLE IF EXISTS users")
@@ -61,8 +66,12 @@ class TestUserRepository(unittest.TestCase):
 
 class TestExpenseRepository(unittest.TestCase):
 
+    @pytest.fixture(autouse=True)
+    def assign_test_db(self, tmpdir_factory):
+        self.test_db = tmpdir_factory.mktemp("data").join("test_db.sqlite")
+        validate_db_file(str(self.test_db))
+
     def setUp(self):
-        self.test_db = "test_database.db"
         self.expense_repo = ExpenseRepository(self.test_db)
         with DatabaseConnection(self.test_db) as cursor:
             cursor.execute("DROP TABLE IF EXISTS expenses")
@@ -115,8 +124,12 @@ class TestExpenseRepository(unittest.TestCase):
 
 class TestIncomeRepository(unittest.TestCase):
 
+    @pytest.fixture(autouse=True)
+    def assign_test_db(self, tmpdir_factory):
+        self.test_db = tmpdir_factory.mktemp("data").join("test_db.sqlite")
+        validate_db_file(str(self.test_db))
+
     def setUp(self):
-        self.test_db = "test_database.db"
         self.income_repo = IncomeRepository(self.test_db)
         with DatabaseConnection(self.test_db) as cursor:
             cursor.execute("DROP TABLE IF EXISTS income")
