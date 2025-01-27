@@ -1,4 +1,6 @@
 import sqlite3
+
+from ..utils import db_utils
 from .exceptions import (
     InvalidDatabaseFileError,
 )
@@ -7,6 +9,10 @@ from .exceptions import (
 class DatabaseConnection:
     def __init__(self, db_file: str):
         self.db_file = db_file
+        if not db_utils.is_valid_db_file(self.db_file):
+            raise InvalidDatabaseFileError(f"Invalid database file: {self.db_file}")
+        self.conn = sqlite3.connect(self.db_file)
+        self.cursor = self.conn.cursor()
 
     def __enter__(self):
         try:
@@ -32,38 +38,41 @@ class DatabaseConnection:
 
 
 def create_tables(db_file: str):
-    with DatabaseConnection(db_file) as cursor:
-        tables = {
-            "users": """
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    email TEXT NOT NULL UNIQUE,
-                    disabled INTEGER NOT NULL DEFAULT 0
-                )
-            """,
-            "expenses": """
-                CREATE TABLE IF NOT EXISTS expenses (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    estimated_date TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    estimated_amount REAL NOT NULL,
-                    actual_amount REAL,
-                    responsible TEXT NOT NULL,
-                    shared INTEGER NOT NULL,
-                    disabled INTEGER NOT NULL DEFAULT 0
-                )
-            """,
-            "income": """
-                CREATE TABLE IF NOT EXISTS income (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    amount REAL NOT NULL,
-                    frequency TEXT NOT NULL,
-                    disabled INTEGER NOT NULL DEFAULT 0
-                )
-            """,
-        }
+    db_conn = DatabaseConnection(db_file)
+    tables = {
+        "users": """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL,
+                disabled INTEGER NOT NULL DEFAULT 0
+            )
+        """,
+        "expenses": """
+            CREATE TABLE IF NOT EXISTS expenses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                estimated_date TEXT NOT NULL,
+                name TEXT NOT NULL,
+                estimated_amount REAL NOT NULL,
+                actual_amount REAL,
+                responsible TEXT NOT NULL,
+                frequency TEXT NOT NULL,
+                shared INTEGER NOT NULL,
+                disabled INTEGER NOT NULL DEFAULT 0
+            )
+        """,
+        "income": """
+            CREATE TABLE IF NOT EXISTS income (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                amount REAL NOT NULL,
+                frequency TEXT NOT NULL,
+                bi_weekly_week INTEGER,
+                disabled INTEGER NOT NULL DEFAULT 0
+            )
+        """,
+    }
 
-        for table_name, create_table_sql in tables.items():
-            if not cursor.table_exists(table_name):
-                cursor.create_table(create_table_sql)
+    for table_name, create_table_sql in tables.items():
+        if not db_conn.table_exists(table_name):
+            db_conn.create_table(create_table_sql)

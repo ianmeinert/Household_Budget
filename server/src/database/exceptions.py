@@ -1,6 +1,4 @@
 # global errors
-
-
 class DatabaseError(Exception):
     """Exception raised for errors that occur during database operations."""
 
@@ -52,7 +50,7 @@ class InvalidDataError(DatabaseError):
 class RecordNotFoundError(DatabaseError):
     """Exception raised when a record is not found in the database."""
 
-    def __init__(self, record_type: str, record_id: int):
+    def __init__(self, record_type: str = "", record_id: int = 0):
         self.message = f"{record_type} with ID {record_id} not found."
         super().__init__(self.message)
 
