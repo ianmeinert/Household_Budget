@@ -7,3 +7,6 @@ passlib[bcrypt]
 python-jose
 cryptography
 kyber-py
+pyjwt
+python-dotenv
+python-multipart

@@ -1,44 +1,88 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
-from fastapi.security import OAuth2PasswordBearer
-from kyber import Kyber512  # Importing the Kyber512 class from kyber-py
-from .schemas import User, Token
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+
+
+from .schemas import Token
+from ..database.schemas import User
+from ..utils.crypto_utils import JWT_ALGORITHM
+from ..database import repository_selector
+from ..database.repositories import UserRepository
+import jwt
 
 app = FastAPI()
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-# Function to encrypt the password using Kyber
-def encrypt_password(password: str) -> str:
-    # Generate a key pair using Kyber
-    public_key, private_key = Kyber512.keygen()
-
-    # Encrypt the password
-    encapsulated_key, shared_secret = Kyber512.enc(public_key)
-
-    # Here you would typically store the encapsulated_key and shared_secret securely
-    # For demonstration, we return the encapsulated key in hexadecimal format
-    return encapsulated_key.hex()
-
-
 @router.post("/token", response_model=Token)
-async def login(user: User):
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    userrepository: UserRepository = repository_selector.get_repository("user")
+
+    try:
+        user: User = userrepository.get_user_by_username(form_data.username)
+        user.encrypt_password()
+
+        if not user or not user.verify_password(form_data.password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token_data = jwt.encode(
+        {"sub": user.username}, user.private_key, algorithm=JWT_ALGORITHM
+    )
+    return Token(access_token=token_data, token_type="bearer")
+
+
+@router.post("/login", response_model=Token)
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    userrepository: UserRepository = repository_selector.get_repository("user")
+
+    user: User = userrepository.get_user_by_username(form_data.username)
+    isverified = user.verify_password(form_data.password)
+    if not user or not isverified:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token_data = jwt.encode(
+        {"sub": user.username}, user.private_key, algorithm=JWT_ALGORITHM
+    )
+    return Token(access_token=token_data, token_type="bearer")
+
+
+@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
+async def register(user: User):
     # Encrypt the user's password
-    encrypted_password = encrypt_password(user.password)
+    user.encrypt_password()
 
-    # Here you would typically verify the username and encrypted password
-    # For demonstration, we assume the user is valid
-    if user.username == "testuser":  # Replace with actual user validation
-        return {"access_token": encrypted_password, "token_type": "bearer"}
+    user_data = {
+        "username": user.username,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+        "password": user.encrypted_password,
+        "private_key": user.private_key,  # Store the private key securely
+    }
 
-    raise HTTPException(status_code=400, detail="Invalid credentials")
+    userrepository: UserRepository = repository_selector.get_repository("user")
+    userrepository.add_user(user_data)
 
+    token_data = jwt.encode(
+        {"sub": user.username}, user.private_key, algorithm=JWT_ALGORITHM
+    )
+    token: Token = Token(access_token=token_data, token_type="bearer")
 
-@router.get("/secure-data")
-async def read_secure_data(token: str = Depends(oauth2_scheme)):
-    # Here you would typically decode and verify the token
-    # For demonstration, we assume the token is valid
-    return {"message": "This is secured data."}
+    return token
 
 
 app.include_router(router)

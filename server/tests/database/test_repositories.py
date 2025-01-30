@@ -1,13 +1,15 @@
 import unittest
 import pytest
-from src.database.connection import DatabaseConnection
 from src.database.repositories import (
     UserRepository,
     ExpenseRepository,
     IncomeRepository,
 )
+from src.database import connection as conn
 from src.database.exceptions import RecordNotFoundError
 from src.utils.db_utils import validate_db_file
+from src.database.schemas import User
+from src.database.exceptions import InvalidDataError
 
 
 class TestUserRepository(unittest.TestCase):
@@ -16,52 +18,57 @@ class TestUserRepository(unittest.TestCase):
     def assign_test_db(self, tmpdir_factory):
         self.test_db = tmpdir_factory.mktemp("data").join("test_db.sqlite")
         validate_db_file(str(self.test_db))
+        conn.create_tables(str(self.test_db))
 
     def setUp(self):
+        self.user_data = {
+            "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test_me@testemail.com",
+            "password": "hashedpassword",
+            "private_key": "privatekey123",
+        }
+
         self.user_repo = UserRepository(self.test_db)
-        with DatabaseConnection(self.test_db) as cursor:
+        with conn.DatabaseConnection(self.test_db) as cursor:
             cursor.execute("DROP TABLE IF EXISTS users")
             cursor.execute(
                 """
-                CREATE TABLE users (
+                CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
+                    username TEXT NOT NULL UNIQUE,
+                    first_name TEXT NOT NULL,
+                    last_name TEXT NOT NULL,
                     email TEXT NOT NULL UNIQUE,
                     password TEXT NOT NULL,
+                    private_key TEXT NOT NULL,
                     disabled INTEGER NOT NULL DEFAULT 0
                 )
             """
             )
 
     def test_add_user(self):
-        user_data = {
-            "name": "John Doe",
-            "email": "john@example.com",
-            "password": "secret",
-        }
-        user = self.user_repo.add_user(user_data)
-        self.assertEqual(user[1], "John Doe")
+        user: User = self.user_repo.add_user(self.user_data)
+        retrieved_user = self.user_repo.get_user_by_username(user.username)
+        self.assertIsNotNone(retrieved_user)
+        self.assertEqual(retrieved_user.username, user.username)
 
     def test_get_users(self):
-        user_data = {
-            "name": "John Doe",
-            "email": "john@example.com",
-            "password": "secret",
-        }
-        self.user_repo.add_user(user_data)
+        user2_data = self.user_data.copy()
+        user2_data["username"] = "testuser2"
+        user2_data["email"] = "test_me2@testemail.com"
+        self.user_repo.add_user(self.user_data)
+        self.user_repo.add_user(user2_data)
         users = self.user_repo.get_users()
-        self.assertEqual(len(users), 1)
+        self.assertEqual(len(users), 2)
 
     def test_disable_user(self):
-        user_data = {
-            "name": "John Doe",
-            "email": "john@example.com",
-            "password": "secret",
-        }
-        user = self.user_repo.add_user(user_data)
-        self.user_repo.disable_user(user[0])
+        user: User = self.user_repo.add_user(self.user_data)
+        self.user_repo.disable_user(user.id)
+
         with self.assertRaises(RecordNotFoundError):
-            self.user_repo.get_user_by_id(user[0])
+            self.user_repo.get_user_by_username(user.username)
 
 
 class TestExpenseRepository(unittest.TestCase):
@@ -70,10 +77,11 @@ class TestExpenseRepository(unittest.TestCase):
     def assign_test_db(self, tmpdir_factory):
         self.test_db = tmpdir_factory.mktemp("data").join("test_db.sqlite")
         validate_db_file(str(self.test_db))
+        conn.create_tables(str(self.test_db))
 
     def setUp(self):
         self.expense_repo = ExpenseRepository(self.test_db)
-        with DatabaseConnection(self.test_db) as cursor:
+        with conn.DatabaseConnection(self.test_db) as cursor:
             cursor.execute("DROP TABLE IF EXISTS expenses")
             cursor.execute(
                 """
@@ -127,11 +135,13 @@ class TestIncomeRepository(unittest.TestCase):
     @pytest.fixture(autouse=True)
     def assign_test_db(self, tmpdir_factory):
         self.test_db = tmpdir_factory.mktemp("data").join("test_db.sqlite")
+        print("test db file: ", str(self.test_db))
         validate_db_file(str(self.test_db))
+        conn.create_tables(str(self.test_db))
 
     def setUp(self):
         self.income_repo = IncomeRepository(self.test_db)
-        with DatabaseConnection(self.test_db) as cursor:
+        with conn.DatabaseConnection(self.test_db) as cursor:
             cursor.execute("DROP TABLE IF EXISTS income")
             cursor.execute(
                 """

@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import contextmanager
 
 from ..utils import db_utils
 from .exceptions import (
@@ -23,8 +24,48 @@ class DatabaseConnection:
             raise InvalidDatabaseFileError(f"An error occurred: {e}")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.conn.commit()
+        if exc_type is not None:
+            self.conn.rollback()
+        else:
+            self.conn.commit()
+        self.cursor.close()
         self.conn.close()
+
+    def execute(self, query, params=None):
+        if params is None:
+            params = []
+        self.validate_sql(query)
+        with self as cursor:
+            cursor.execute(query, params)
+
+    def executemany(self, query, params_list):
+        self.validate_sql(query)
+        with self as cursor:
+            cursor.executemany(query, params_list)
+
+    def fetchall(self, query, params=None):
+        if params is None:
+            params = []
+        self.validate_sql(query)
+        with self as cursor:
+            cursor.execute(query, params)
+            return cursor.fetchall()
+
+    def fetchone(self, query, params=None):
+        if params is None:
+            params = []
+        self.validate_sql(query)
+        with self as cursor:
+            cursor.execute(query, params)
+            return cursor.fetchone()
+
+    @staticmethod
+    def validate_sql(query):
+        allowed_statements = ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP"]
+        if not any(
+            query.strip().upper().startswith(stmt) for stmt in allowed_statements
+        ):
+            raise ValueError("Invalid SQL statement")
 
     def table_exists(self, table_name: str) -> bool:
         self.cursor.execute(
@@ -43,9 +84,13 @@ def create_tables(db_file: str):
         "users": """
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
+                username TEXT NOT NULL UNIQUE,
+                first_name TEXT NOT NULL,
+                last_name TEXT NOT NULL,
                 email TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL,
+                private_key TEXT NOT NULL,
+                cyphertext TEXT NOT NULL,
                 disabled INTEGER NOT NULL DEFAULT 0
             )
         """,

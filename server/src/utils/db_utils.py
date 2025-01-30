@@ -11,5 +11,5 @@ def validate_db_file(db_file):
 
 
 def create_db_file(db_file):
-    with open(db_file, "w") as f:
-        pass  # Create an empty file or add initial setup here if needed
+    os.makedirs(os.path.dirname(db_file), exist_ok=True)
+    open(db_file, "a").close()

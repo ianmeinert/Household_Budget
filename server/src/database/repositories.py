@@ -11,6 +11,7 @@ from .exceptions import (
     DuplicateUserError,
     RecordNotFoundError,
 )
+from .schemas import User
 
 
 class Repository:
@@ -25,6 +26,14 @@ class Repository:
         except sqlite3.Error as e:
             raise DatabaseError(f"An error occurred: {e}")
 
+    def fetch_one(self, query: str, params: List[Any] = []):
+        try:
+            with DatabaseConnection(self.db_file) as cursor:
+                cursor.execute(query, params)
+                return cursor.fetchone()
+        except sqlite3.Error as e:
+            raise DatabaseError(f"An error occurred: {e}")
+
     def execute_non_query(self, query: str, params: List[Any] = []):
         try:
             with DatabaseConnection(self.db_file) as cursor:
@@ -34,52 +43,139 @@ class Repository:
 
 
 class UserRepository(Repository):
-    def get_users(self):
-        users = self.execute_query("SELECT * FROM users WHERE disabled = 0")
+    def get_users(self) -> List[User]:
+        users: List[User] = self.execute_query("SELECT * FROM users WHERE disabled = 0")
         if not users:
             raise UserNotFoundError(0)  # Assuming 0 as a placeholder
-        return users
+        return [
+            User(
+                id=user[0],
+                username=user[1],
+                first_name=user[2],
+                last_name=user[3],
+                email=user[4],
+                password=str(),
+                encrypted_password=user[5],
+                private_key=user[6],
+                cyphertext=user[7],
+            )
+            for user in users
+        ]
 
     def add_user(self, user_data: dict):
         try:
-            if not all(key in user_data for key in ["name", "email", "password"]):
+            required_fields = [
+                "username",
+                "first_name",
+                "last_name",
+                "email",
+                "password",
+                "private_key",
+            ]
+            if not all(key in user_data for key in required_fields):
                 raise InvalidDataError("Missing required user data fields.")
-            existing_user = self.get_user_by_name(user_data["name"])
+            existing_user = self.get_user_by_username(user_data["username"])
             if existing_user:
-                raise DuplicateUserError(user_data["name"])
+                raise DuplicateUserError(user_data["username"])
         except RecordNotFoundError:
+            user: User = User(**user_data)
+            user.encrypt_password()
             self.execute_non_query(
-                "INSERT INTO users (name, email, password, disabled) VALUES (?, ?, ?, 0)",
-                [user_data["name"], user_data["email"], user_data["password"]],
+                "INSERT INTO users (username, first_name, last_name, email, password, private_key, cyphertext, disabled) VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
+                [
+                    user.username,
+                    user.first_name,
+                    user.last_name,
+                    user.email,
+                    user.encrypted_password,
+                    user.private_key,
+                    user.cyphertext,
+                ],
             )
-        return self.get_user_by_name(user_data["name"])
+        return self.get_user_by_username(user_data["username"])
 
     def disable_user(self, user_id: int):
         self.execute_non_query("UPDATE users SET disabled = 1 WHERE id = ?", [user_id])
 
-    def get_user_by_id(self, user_id: int):
+    def get_user_by_id(self, user_id: int) -> User:
         user = self.execute_query(
-            "SELECT * FROM users WHERE id = ? AND disabled = 0", [user_id]
+            "SELECT id, username, first_name, last_name, email, password, private_key, cyphertext FROM users WHERE id = ? AND disabled = 0",
+            [user_id],
         )
         if not user:
-            raise RecordNotFoundError(f"User with id {user_id} not found.")
-        return user[0]  # Return the single record
+            raise RecordNotFoundError(record_type="User", record_id=user_id)
+        user_data = user[0]
+        return User(
+            id=user_data[0],
+            username=user_data[1],
+            first_name=user_data[2],
+            last_name=user_data[3],
+            email=user_data[4],
+            encrypted_password=user_data[5],
+            private_key=user_data[6],
+            cyphertext=user_data[7],
+        )
 
-    def get_user_by_name(self, name: str):
+    def get_user_by_name(self, name: str) -> User:
         user = self.execute_query(
-            "SELECT id, name, email FROM users WHERE name = ? AND disabled = 0", [name]
+            "SELECT id, username, first_name, last_name, email, password, private_key, cyphertext FROM users WHERE username = ? AND disabled = 0",
+            [name],
         )
         if not user:
-            raise RecordNotFoundError(f"User with username {name} not found.")
-        return user[0]  # Return the single record
+            raise RecordNotFoundError(record_type="User", record_id=0)
+        user_data = user[0]
+        return User(
+            id=user_data[0],
+            username=user_data[1],
+            first_name=user_data[2],
+            last_name=user_data[3],
+            email=user_data[4],
+            password=str(),
+            encrypted_password=user_data[5],
+            private_key=user_data[6],
+            cyphertext=user_data[7],
+        )
 
-    def get_user_credentials_by_id(self, id: int):
+    def get_user_by_username(self, username: str) -> User:
+        user_data = self.fetch_one(
+            "SELECT id, username, first_name, last_name, email, password, private_key, cyphertext FROM users WHERE username = ? AND disabled = 0 LIMIT 1",
+            [username],
+        )
+        if not user_data:
+            raise RecordNotFoundError(record_type="User", record_id=0)
+
+        user: User = User(
+            id=user_data[0],
+            username=user_data[1],
+            first_name=user_data[2],
+            last_name=user_data[3],
+            email=user_data[4],
+            password=str(),
+            encrypted_password=user_data[5],
+            private_key=user_data[6],
+            cyphertext=user_data[7],
+        )
+
+        return user
+
+    def get_user_credentials_by_id(self, id: int) -> User:
         user = self.execute_query(
-            "SELECT name, password FROM users WHERE id = ? AND disabled = 0", [id]
+            "SELECT id, username, first_name, last_name, email, password, private_key, cyphertext FROM users WHERE id = ? AND disabled = 0",
+            [id],
         )
         if not user:
-            raise RecordNotFoundError(f"User with id {id} not found.")
-        return user[0]  # Return the single record
+            raise RecordNotFoundError(record_type="User", record_id=id)
+        user_data = user[0]
+        return User(
+            id=user_data[0],
+            username=user_data[1],
+            first_name=user_data[2],
+            last_name=user_data[3],
+            email=user_data[4],
+            encrypted_password=user_data[5],
+            private_key=user_data[6],
+            cyphertext=user_data[7],
+        )
 
 
 class ExpenseRepository(Repository):
@@ -127,7 +223,7 @@ class ExpenseRepository(Repository):
             "SELECT * FROM expenses WHERE id = ? AND disabled = 0", [expense_id]
         )
         if not expense:
-            raise RecordNotFoundError(f"Expense with id {expense_id} not found.")
+            raise RecordNotFoundError(record_type="Expenses", record_id=expense_id)
         return expense
 
 
@@ -168,5 +264,5 @@ class IncomeRepository(Repository):
             "SELECT * FROM income WHERE id = ? AND disabled = 0", [income_id]
         )
         if not income:
-            raise RecordNotFoundError(f"Income with id {income_id} not found.")
+            raise RecordNotFoundError(record_type="Income", record_id=income_id)
         return income
