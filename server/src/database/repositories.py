@@ -4,12 +4,12 @@ from typing import Any, List
 from .connection import DatabaseConnection
 from .exceptions import (
     DatabaseError,
-    UserNotFoundError,
+    DuplicateUserError,
     ExpenseNotFoundError,
     IncomeNotFoundError,
     InvalidDataError,
-    DuplicateUserError,
     RecordNotFoundError,
+    UserNotFoundError,
 )
 from .schemas import User
 
@@ -20,7 +20,8 @@ class Repository:
 
     def execute_query(self, query: str, params: List[Any] = []):
         try:
-            with DatabaseConnection(self.db_file) as cursor:
+            with DatabaseConnection(self.db_file) as db_conn:
+                cursor = db_conn.connection.cursor()
                 cursor.execute(query, params)
                 return cursor.fetchall()
         except sqlite3.Error as e:
@@ -28,7 +29,8 @@ class Repository:
 
     def fetch_one(self, query: str, params: List[Any] = []):
         try:
-            with DatabaseConnection(self.db_file) as cursor:
+            with DatabaseConnection(self.db_file) as db_conn:
+                cursor = db_conn.connection.cursor()
                 cursor.execute(query, params)
                 return cursor.fetchone()
         except sqlite3.Error as e:
@@ -36,7 +38,8 @@ class Repository:
 
     def execute_non_query(self, query: str, params: List[Any] = []):
         try:
-            with DatabaseConnection(self.db_file) as cursor:
+            with DatabaseConnection(self.db_file) as db_conn:
+                cursor = db_conn.connection.cursor()
                 cursor.execute(query, params)
         except sqlite3.Error as e:
             raise DatabaseError(f"An error occurred: {e}")
@@ -70,7 +73,6 @@ class UserRepository(Repository):
                 "last_name",
                 "email",
                 "password",
-                "private_key",
             ]
             if not all(key in user_data for key in required_fields):
                 raise InvalidDataError("Missing required user data fields.")

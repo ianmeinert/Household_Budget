@@ -1,7 +1,8 @@
-from kyber_py.kyber import Kyber1024
-from cryptography.fernet import Fernet
-import hashlib
 import base64
+import hashlib
+
+from cryptography.fernet import Fernet
+from kyber_py.kyber import Kyber1024
 
 JWT_ALGORITHM = "HS256"
 

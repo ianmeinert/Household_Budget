@@ -6,7 +6,7 @@ uvicorn
 passlib[bcrypt]
 python-jose
 cryptography
-kyber-py
 pyjwt
 python-dotenv
 python-multipart
+git+https://github.com/GiacomoPope/kyber-py.git

@@ -1,13 +1,12 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status
+import jwt
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-
-from .schemas import Token
-from ..database.schemas import User
-from ..utils.crypto_utils import JWT_ALGORITHM
 from ..database import repository_selector
 from ..database.repositories import UserRepository
-import jwt
+from ..database.schemas import User
+from ..utils.crypto_utils import JWT_ALGORITHM
+from .schemas import Token
 
 app = FastAPI()
 router = APIRouter()
@@ -28,7 +27,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
                 detail="Invalid username or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
@@ -44,9 +43,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     userrepository: UserRepository = repository_selector.get_repository("user")
-
     user: User = userrepository.get_user_by_username(form_data.username)
     isverified = user.verify_password(form_data.password)
+
     if not user or not isverified:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

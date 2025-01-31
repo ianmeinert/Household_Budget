@@ -1,19 +1,19 @@
 import unittest
+
 import pytest
-from src.database.repositories import (
-    UserRepository,
-    ExpenseRepository,
-    IncomeRepository,
-)
+
 from src.database import connection as conn
 from src.database.exceptions import RecordNotFoundError
-from src.utils.db_utils import validate_db_file
+from src.database.repositories import (
+    ExpenseRepository,
+    IncomeRepository,
+    UserRepository,
+)
 from src.database.schemas import User
-from src.database.exceptions import InvalidDataError
+from src.utils.db_utils import validate_db_file
 
 
 class TestUserRepository(unittest.TestCase):
-
     @pytest.fixture(autouse=True)
     def assign_test_db(self, tmpdir_factory):
         self.test_db = tmpdir_factory.mktemp("data").join("test_db.sqlite")
@@ -31,7 +31,8 @@ class TestUserRepository(unittest.TestCase):
         }
 
         self.user_repo = UserRepository(self.test_db)
-        with conn.DatabaseConnection(self.test_db) as cursor:
+        with conn.DatabaseConnection(self.test_db) as db_conn:
+            cursor = db_conn.connection.cursor()
             cursor.execute("DROP TABLE IF EXISTS users")
             cursor.execute(
                 """
@@ -43,6 +44,7 @@ class TestUserRepository(unittest.TestCase):
                     email TEXT NOT NULL UNIQUE,
                     password TEXT NOT NULL,
                     private_key TEXT NOT NULL,
+                    cyphertext TEXT NOT NULL,
                     disabled INTEGER NOT NULL DEFAULT 0
                 )
             """
@@ -72,7 +74,6 @@ class TestUserRepository(unittest.TestCase):
 
 
 class TestExpenseRepository(unittest.TestCase):
-
     @pytest.fixture(autouse=True)
     def assign_test_db(self, tmpdir_factory):
         self.test_db = tmpdir_factory.mktemp("data").join("test_db.sqlite")
@@ -81,7 +82,8 @@ class TestExpenseRepository(unittest.TestCase):
 
     def setUp(self):
         self.expense_repo = ExpenseRepository(self.test_db)
-        with conn.DatabaseConnection(self.test_db) as cursor:
+        with conn.DatabaseConnection(self.test_db) as db_conn:
+            cursor = db_conn.connection.cursor()
             cursor.execute("DROP TABLE IF EXISTS expenses")
             cursor.execute(
                 """
@@ -131,17 +133,16 @@ class TestExpenseRepository(unittest.TestCase):
 
 
 class TestIncomeRepository(unittest.TestCase):
-
     @pytest.fixture(autouse=True)
     def assign_test_db(self, tmpdir_factory):
         self.test_db = tmpdir_factory.mktemp("data").join("test_db.sqlite")
-        print("test db file: ", str(self.test_db))
         validate_db_file(str(self.test_db))
         conn.create_tables(str(self.test_db))
 
     def setUp(self):
         self.income_repo = IncomeRepository(self.test_db)
-        with conn.DatabaseConnection(self.test_db) as cursor:
+        with conn.DatabaseConnection(self.test_db) as db_conn:
+            cursor = db_conn.connection.cursor()
             cursor.execute("DROP TABLE IF EXISTS income")
             cursor.execute(
                 """
