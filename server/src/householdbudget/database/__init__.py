@@ -1,14 +1,15 @@
 # Initialize the database package
 
+import os
+
+from dotenv import load_dotenv
+
 from ..utils.db_utils import validate_db_file
 from .connection import create_tables
 from .factory import RepositoryFactory
-import os
-from dotenv import load_dotenv
 
 
 class RepositorySelector:
-
     def __init__(self, dbfile):
         validate_db_file(dbfile)
         # check if the sqlite file is empty

@@ -1,9 +1,9 @@
 import unittest
-from src.database.schemas import User
+
+from householdbudget.database.schemas import User
 
 
 class TestUserSchema(unittest.TestCase):
-
     def setUp(self):
         self.user_data = {
             "username": "testuser",

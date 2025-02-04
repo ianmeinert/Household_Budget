@@ -1,16 +1,17 @@
 import unittest
+
 import pytest
-from src.database.factory import RepositoryFactory
-from src.database.repositories import (
-    UserRepository,
+
+from householdbudget.database.factory import RepositoryFactory
+from householdbudget.database.repositories import (
     ExpenseRepository,
     IncomeRepository,
+    UserRepository,
 )
-from src.utils.db_utils import validate_db_file
+from householdbudget.utils.db_utils import validate_db_file
 
 
 class TestRepositoryFactory(unittest.TestCase):
-
     @pytest.fixture(autouse=True)
     def assign_test_db(self, tmpdir_factory):
         self.test_db = tmpdir_factory.mktemp("data").join("test_db.sqlite")

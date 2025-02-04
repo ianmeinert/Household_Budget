@@ -4,7 +4,7 @@ import hashlib
 from cryptography.fernet import Fernet
 from kyber_py.kyber import Kyber1024
 
-JWT_ALGORITHM = "HS256"
+JWT_ALGORITHM = "HS256"  # confirm jwt capability
 
 
 def generate_keys():
@@ -30,7 +30,7 @@ def decrypt(ciphertext, encrypted_text, private_key):
     # Decrypt the ciphertext to retrieve the key
     key = Kyber1024.decaps(private_key, ciphertext)
 
-    # Derive the Fernet-compatible key from the Kyber shared key
+    # Derive the Fernet-compatible key from the Kyber shared keypy
     fernet_key = base64.urlsafe_b64encode(hashlib.sha256(key).digest())
 
     # Use the derived key to decrypt the encrypted text

@@ -1,11 +1,11 @@
 import os
-import pytest
-from unittest.mock import patch, mock_open, MagicMock
-from src.utils.db_utils import validate_db_file, create_db_file
+from unittest.mock import mock_open, patch
+
+from householdbudget.utils.db_utils import create_db_file, validate_db_file
 
 
 @patch("os.path.exists")
-@patch("src.utils.db_utils.create_db_file")
+@patch("householdbudget.utils.db_utils.create_db_file")
 def test_validate_db_file_exists(mock_create_db_file, mock_exists):
     mock_exists.return_value = True
     db_file = "test_db_file.db"
@@ -18,7 +18,7 @@ def test_validate_db_file_exists(mock_create_db_file, mock_exists):
 
 @patch("os.path.exists")
 @patch("builtins.open", new_callable=mock_open)
-@patch("src.utils.db_utils.create_db_file")
+@patch("householdbudget.utils.db_utils.create_db_file")
 def test_validate_db_file_not_exists(mock_create_db_file, mock_open, mock_exists):
     mock_exists.return_value = False
     db_file = "test_db_file.db"

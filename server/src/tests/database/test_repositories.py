@@ -2,15 +2,15 @@ import unittest
 
 import pytest
 
-from src.database import connection as conn
-from src.database.exceptions import RecordNotFoundError
-from src.database.repositories import (
+from householdbudget.database import connection as conn
+from householdbudget.database.exceptions import RecordNotFoundError
+from householdbudget.database.repositories import (
     ExpenseRepository,
     IncomeRepository,
     UserRepository,
 )
-from src.database.schemas import User
-from src.utils.db_utils import validate_db_file
+from householdbudget.database.schemas import User
+from householdbudget.utils.db_utils import validate_db_file
 
 
 class TestUserRepository(unittest.TestCase):

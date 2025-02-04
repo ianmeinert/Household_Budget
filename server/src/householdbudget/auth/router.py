@@ -1,5 +1,5 @@
 import jwt
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from ..database import repository_selector
@@ -8,7 +8,6 @@ from ..database.schemas import User
 from ..utils.crypto_utils import JWT_ALGORITHM
 from .schemas import Token
 
-app = FastAPI()
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -82,6 +81,3 @@ async def register(user: User):
     token: Token = Token(access_token=token_data, token_type="bearer")
 
     return token
-
-
-app.include_router(router)

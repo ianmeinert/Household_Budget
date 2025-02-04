@@ -1,8 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from src.auth.router import app
-from src.database.factory import RepositoryFactory
+from householdbudget.database.factory import RepositoryFactory
+from householdbudget.main import app
 
 client = TestClient(app)
 

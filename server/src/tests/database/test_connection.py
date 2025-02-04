@@ -2,9 +2,9 @@ import unittest
 
 import pytest
 
-from src.database.connection import DatabaseConnection, create_tables
-from src.database.exceptions import InvalidDatabaseFileError
-from src.utils.db_utils import validate_db_file
+from householdbudget.database.connection import DatabaseConnection, create_tables
+from householdbudget.database.exceptions import InvalidDatabaseFileError
+from householdbudget.utils.db_utils import validate_db_file
 
 
 class TestDatabaseConnection(unittest.TestCase):

@@ -1,9 +1,9 @@
 import unittest
-from src.utils.crypto_utils import generate_keys, encrypt, decrypt
+
+from householdbudget.utils.crypto_utils import decrypt, encrypt, generate_keys
 
 
 class TestCryptoUtils(unittest.TestCase):
-
     def test_generate_keys(self):
         public_key, private_key = generate_keys()
         self.assertIsNotNone(public_key)

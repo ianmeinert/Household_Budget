@@ -2,8 +2,8 @@ import os
 
 import pytest
 
-from src.database.connection import create_tables
-from src.utils.db_utils import validate_db_file
+from householdbudget.database.connection import create_tables
+from householdbudget.utils.db_utils import validate_db_file
 
 
 @pytest.fixture(scope="function")

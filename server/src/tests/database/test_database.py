@@ -1,7 +1,7 @@
 import pytest
 
-from src.database.factory import RepositoryFactory
-from src.database.schemas import User
+from householdbudget.database.factory import RepositoryFactory
+from householdbudget.database.schemas import User
 
 
 @pytest.fixture

@@ -1,5 +1,5 @@
 [project]
-name = "household-budget-server"
+name = "householdbudget"
 version = "0.1.0"
 description = "The restful service used to support the Household Budget web application"
 readme = "README.md"
