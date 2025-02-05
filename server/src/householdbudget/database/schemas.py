@@ -1,8 +1,6 @@
-import base64
-
 from pydantic import BaseModel
 
-from ..utils.crypto_utils import decrypt, encrypt, generate_keys
+from ..auth.schemas import PasswordEncryptor
 
 
 class User(BaseModel):
@@ -12,33 +10,21 @@ class User(BaseModel):
     first_name: str
     last_name: str
     password: str
-    encrypted_password: bytes = None
-    private_key: bytes = None
-    cyphertext: bytes = None
+    password_encryptor: PasswordEncryptor = PasswordEncryptor()
 
-    def encrypt_password(self):
-        public_key, self.private_key = generate_keys()
-        c, encrypted_text = encrypt(self.password, public_key)
-        self.cyphertext = base64.urlsafe_b64encode(c)
-        self.encrypted_password = base64.urlsafe_b64encode(encrypted_text)
-        self.password = str()  # Clear the password
-
-    def decrypt_password(self):
-        if self.private_key is None:
-            raise ValueError("Private key is not available for decryption.")
-        # Decode the values
-        c = base64.urlsafe_b64decode(self.cyphertext)
-        encrypted_text = base64.urlsafe_b64decode(self.encrypted_password)
-        decrypted = decrypt(c, encrypted_text, self.private_key)
-        return decrypted
+    def set_password(self, password: str):
+        self.password_encryptor.encrypt_password(password)
+        self.password = str()
 
     def verify_password(self, password: str) -> bool:
-        decrypted = self.decrypt_password()
+        decrypted = self.password_encryptor.decrypt_password()
         return decrypted == password
 
     class ConfigDict:
         # Ensure sensitive fields are not exposed
         fields = {
-            "private_key": {"exclude": True},
-            "encrypted_password": {"exclude": True},
+            "password": {"exclude": True},
+            "password_encryptor.private_key": {"exclude": True},
+            "password_encryptor.encrypted_password": {"exclude": True},
+            "password_encryptor.salt": {"exclude": True},
         }

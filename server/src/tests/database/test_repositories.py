@@ -26,14 +26,14 @@ class TestUserRepository(unittest.TestCase):
             "first_name": "Test",
             "last_name": "User",
             "email": "test_me@testemail.com",
-            "password": "hashedpassword",
-            "private_key": "privatekey123",
+            "password": "securepassword123",
         }
 
         self.user_repo = UserRepository(self.test_db)
         with conn.DatabaseConnection(self.test_db) as db_conn:
             cursor = db_conn.connection.cursor()
             cursor.execute("DROP TABLE IF EXISTS users")
+            cursor.execute("DROP TABLE IF EXISTS encryption_data")
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS users (
@@ -42,10 +42,19 @@ class TestUserRepository(unittest.TestCase):
                     first_name TEXT NOT NULL,
                     last_name TEXT NOT NULL,
                     email TEXT NOT NULL UNIQUE,
-                    password TEXT NOT NULL,
+                    disabled INTEGER NOT NULL DEFAULT 0
+                )
+            """
+            )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS encryption_data (
+                    user_id INTEGER PRIMARY KEY,
+                    encrypted_password TEXT NOT NULL,
                     private_key TEXT NOT NULL,
                     cyphertext TEXT NOT NULL,
-                    disabled INTEGER NOT NULL DEFAULT 0
+                    salt TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
                 )
             """
             )

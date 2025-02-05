@@ -85,10 +85,17 @@ def create_tables(db_file: str):
                     first_name TEXT NOT NULL,
                     last_name TEXT NOT NULL,
                     email TEXT NOT NULL UNIQUE,
-                    password TEXT NOT NULL,
+                    disabled INTEGER NOT NULL DEFAULT 0
+                )
+            """,
+            "encryption_data": """
+                CREATE TABLE IF NOT EXISTS encryption_data (
+                    user_id INTEGER PRIMARY KEY,
+                    encrypted_password TEXT NOT NULL,
                     private_key TEXT NOT NULL,
                     cyphertext TEXT NOT NULL,
-                    disabled INTEGER NOT NULL DEFAULT 0
+                    salt TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users (id)
                 )
             """,
             "expenses": """

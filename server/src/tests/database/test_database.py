@@ -11,25 +11,28 @@ def user_data():
         "first_name": "Test",
         "last_name": "User",
         "email": "test_me2@testemail.com",
-        "password": "hashedpassword",
-        "private_key": "privatekey123",
+        "password": "securepassword123",
     }
 
 
 @pytest.mark.usefixtures("db_file")
 def test_create_user(db_file, user_data):
     rf = RepositoryFactory(db_file).get_user_repository()
-    # encrypt the user password
+    # Add the user and encrypt the password
     user: User = rf.add_user(user_data)
     assert user.username == user_data["username"]
     assert user.email == user_data["email"]
+    assert user.password_encryptor.encrypted_password is not None
+    assert user.password_encryptor.private_key is not None
 
 
 @pytest.mark.usefixtures("db_file")
 def test_get_user_by_name(db_file, user_data):
     rf = RepositoryFactory(db_file).get_user_repository()
     rf.add_user(user_data)
-    # encrypt the user password
+    # Retrieve the user by username
     user: User = rf.get_user_by_name(user_data["username"])
     assert user.username == user_data["username"]
     assert user.email == user_data["email"]
+    assert user.password_encryptor.encrypted_password is not None
+    assert user.password_encryptor.private_key is not None

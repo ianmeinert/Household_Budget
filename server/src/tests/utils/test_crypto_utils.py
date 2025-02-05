@@ -12,11 +12,12 @@ class TestCryptoUtils(unittest.TestCase):
     def test_encrypt_decrypt(self):
         public_key, private_key = generate_keys()
         phrase = "This is a test phrase."
-        ciphertext, encrypted_text = encrypt(phrase, public_key)
+        ciphertext, salt, encrypted_text = encrypt(phrase, public_key)
         self.assertIsNotNone(ciphertext)
+        self.assertIsNotNone(salt)
         self.assertIsNotNone(encrypted_text)
 
-        decrypted_phrase = decrypt(ciphertext, encrypted_text, private_key)
+        decrypted_phrase = decrypt(ciphertext, salt, encrypted_text, private_key)
         self.assertEqual(phrase, decrypted_phrase)
 
 
